@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { Container, Row, Col } from "react-bootstrap";
+import { useEffect, useMemo, useState } from "react";
+import { Container, Row, Col, ToastContainer, Toast } from "react-bootstrap";
 import AppNavbar from "./components/Navbar";
 import CardLayout from "./components/CardLayout";
 import QRForm from "./components/QRForm";
@@ -8,33 +8,73 @@ import QRExport from "./components/QRExport";
 import QRHistory from "./components/QRHistory";
 
 /**
- * App component:
- * - Holds global state (text, format, size, filename, history).
- * - Side-by-side on wide screens; stacked on small screens.
- * - History is persisted in localStorage.
+ * App:
+ * - Uses a lazy initializer to load history from localStorage once (race-free).
+ * - Persists history on change with try/catch and a quota-safe fallback.
+ * - Shows toasts on save/delete; asks confirmation before delete (handled in QRHistory).
  */
 export default function App() {
+  const STORAGE_KEY = "qr_history_v1";
+
+  // Lazy initializer — read once, synchronously; avoids effect races.
+  const [history, setHistory] = useState(() => {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      const parsed = raw ? JSON.parse(raw) : [];
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  });
+
   const [text, setText] = useState("");
   const [format, setFormat] = useState("canvas"); // 'canvas' | 'svg'
-  const [size, setSize] = useState(200); // px
+  const [size, setSize] = useState(200);
   const [fileName, setFileName] = useState("qr-code");
-  const [history, setHistory] = useState([]);
 
-  // Load history initially
+  const [toastMsg, setToastMsg] = useState("");
+  const [showToast, setShowToast] = useState(false);
+
+  // Persist history whenever it changes (with quota guard).
   useEffect(() => {
-    const saved = localStorage.getItem("qr_history_v1");
-    if (saved) {
-      try {
-        setHistory(JSON.parse(saved));
-      } catch {
-        // if corrupted, ignore
+    const save = (data) => {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    };
+    try {
+      save(history);
+    } catch (e) {
+      // If localStorage quota is exceeded (very large PNGs/SVGs),
+      // trim older items and try again instead of failing silently.
+      if (
+        e &&
+        typeof e === "object" &&
+        "name" in e &&
+        e.name === "QuotaExceededError"
+      ) {
+        // Keep newest 70% and retry
+        const trimmed = history.slice(0, Math.ceil(history.length * 0.7));
+        try {
+          save(trimmed);
+          setHistory(trimmed);
+          triggerToast("Storage full: trimmed older history items.");
+        } catch {
+          // If still failing, keep only the latest one
+          const minimal = history.slice(0, 1);
+          try {
+            save(minimal);
+            setHistory(minimal);
+            triggerToast("Storage very full: kept latest item only.");
+          } catch {
+            // As a last resort, clear
+            localStorage.removeItem(STORAGE_KEY);
+            setHistory([]);
+            triggerToast(
+              "Could not persist history (storage disabled or full)."
+            );
+          }
+        }
       }
     }
-  }, []);
-
-  // Persist history whenever it changes
-  useEffect(() => {
-    localStorage.setItem("qr_history_v1", JSON.stringify(history));
   }, [history]);
 
   // Helper: sanitize filenames (letters/numbers/-/_)
@@ -48,7 +88,6 @@ export default function App() {
   const handleSaveToHistory = () => {
     if (!text) return;
 
-    // Get a preview image data URL for the current QR
     let previewUrl = "";
     if (format === "canvas") {
       const canvas = document.getElementById("qr-canvas");
@@ -63,7 +102,10 @@ export default function App() {
     }
 
     const entry = {
-      id: crypto.randomUUID(),
+      id:
+        crypto && crypto.randomUUID
+          ? crypto.randomUUID()
+          : `${Date.now()}_${Math.random().toString(36).slice(2)}`,
       text,
       fileName: sanitizeFileName(fileName),
       format,
@@ -73,11 +115,21 @@ export default function App() {
     };
 
     setHistory((prev) => [entry, ...prev]);
+    triggerToast("Saved to history!");
   };
 
   const handleDeleteHistory = (id) => {
     setHistory((prev) => prev.filter((h) => h.id !== id));
+    triggerToast("Deleted from history.");
   };
+
+  const triggerToast = (msg) => {
+    setToastMsg(msg);
+    setShowToast(true);
+  };
+
+  // Derived memo for total count (example of best-practice memoization)
+  const historyCount = useMemo(() => history.length, [history]);
 
   return (
     <>
@@ -117,16 +169,25 @@ export default function App() {
         {/* History row */}
         <Row className="mt-4">
           <Col xs={12}>
-            <CardLayout title="History">
-              <QRHistory
-                items={history}
-                onDelete={handleDeleteHistory}
-                // Reuse same sanitize + download logic inside list
-              />
+            <CardLayout title={`History (${historyCount})`}>
+              <QRHistory items={history} onDelete={handleDeleteHistory} />
             </CardLayout>
           </Col>
         </Row>
       </Container>
+
+      {/* Toast notifications */}
+      <ToastContainer position="bottom-end" className="p-3">
+        <Toast
+          bg="dark"
+          onClose={() => setShowToast(false)}
+          show={showToast}
+          delay={3000}
+          autohide
+        >
+          <Toast.Body className="text-white">{toastMsg}</Toast.Body>
+        </Toast>
+      </ToastContainer>
     </>
   );
 }

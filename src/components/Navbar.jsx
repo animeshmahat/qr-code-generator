@@ -1,8 +1,8 @@
 import { Navbar, Container } from "react-bootstrap";
 
 /**
- * A simple navigation bar displayed at the top of the app.
- * - Separated as its own component so it's reusable and easy to maintain.
+ * AppNavbar:
+ * - Minimal top bar
  */
 export default function AppNavbar() {
   return (

@@ -1,11 +1,11 @@
-import { useState } from "react";
-import { Button, ButtonGroup, Form, Stack } from "react-bootstrap";
+import { useEffect, useState } from "react";
+import { Button, Form, Stack } from "react-bootstrap";
 
 /**
  * QRExport:
  * - Custom filename input with sanitization.
- * - Download PNG (from canvas) or SVG (from svg).
- * - Save current QR to History.
+ * - Download PNG/SVG.
+ * - Save current QR to history.
  */
 export default function QRExport({
   text,
@@ -17,9 +17,13 @@ export default function QRExport({
 }) {
   const [localName, setLocalName] = useState(fileName || "qr-code");
 
+  // Keep input in sync if parent changes filename elsewhere
+  useEffect(() => {
+    setLocalName(fileName || "qr-code");
+  }, [fileName]);
+
   if (!text) return null;
 
-  // Keep parent in sync as user types
   const handleNameChange = (e) => {
     const v = e.target.value;
     setLocalName(v);
@@ -74,7 +78,7 @@ export default function QRExport({
         </Form.Text>
       </Form.Group>
 
-      {/* Download buttons */}
+      {/* Download + Save buttons */}
       <Stack
         direction="horizontal"
         gap={2}

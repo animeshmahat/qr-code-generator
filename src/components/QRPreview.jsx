@@ -3,8 +3,7 @@ import { Card } from "react-bootstrap";
 
 /**
  * QRPreview:
- * - Renders either a Canvas or SVG QR with stable IDs for export.
- * - Size controlled by parent.
+ * - Renders Canvas or SVG QR with stable IDs used by export.
  */
 export default function QRPreview({ text, format, size }) {
   if (!text) return null;
@@ -15,7 +14,7 @@ export default function QRPreview({ text, format, size }) {
 
       {format === "canvas" ? (
         <QRCodeCanvas
-          id="qr-canvas" // <-- used for PNG export
+          id="qr-canvas" // used for PNG export
           value={text}
           size={size}
           bgColor="#ffffff"
@@ -26,7 +25,7 @@ export default function QRPreview({ text, format, size }) {
         />
       ) : (
         <QRCodeSVG
-          id="qr-svg" // <-- used for SVG export
+          id="qr-svg" // used for SVG export
           value={text}
           size={size}
           bgColor="#ffffff"

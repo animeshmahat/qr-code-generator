@@ -14,7 +14,7 @@ export default function QRForm({
   size,
   onSizeChange,
 }) {
-  // Local mirrors for snappy typing, then sync up
+  // Local mirror for snappy typing, then sync up
   const [localText, setLocalText] = useState(text);
 
   useEffect(() => setLocalText(text), [text]);
@@ -36,8 +36,7 @@ export default function QRForm({
           onChange={(e) => setLocalText(e.target.value)}
         />
         <Form.Text className="text-muted">
-          The QR updates as you type after pressing Generate, or type and click
-          outside to update.
+          Click "Generate / Update" to refresh the preview.
         </Form.Text>
       </Form.Group>
 
