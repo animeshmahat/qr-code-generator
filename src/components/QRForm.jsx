@@ -3,8 +3,8 @@ import { Form, Button, Row, Col } from "react-bootstrap";
 
 /**
  * QRForm:
- * - Controlled inputs for text, format, and size.
- * - Emits changes up to App for single source of truth.
+ * - Controlled inputs for QR config (text, format, size).
+ * - Includes extra fields for Business Card mode (name, role, email, phone, website).
  */
 export default function QRForm({
   text,
@@ -13,8 +13,9 @@ export default function QRForm({
   onFormatChange,
   size,
   onSizeChange,
+  cardData,
+  onCardDataChange,
 }) {
-  // Local mirror for snappy typing, then sync up
   const [localText, setLocalText] = useState(text);
 
   useEffect(() => setLocalText(text), [text]);
@@ -40,7 +41,7 @@ export default function QRForm({
         </Form.Text>
       </Form.Group>
 
-      {/* Format + Size in a row on wide screens */}
+      {/* Format + Size */}
       <Row className="g-3">
         <Col xs={12} md={6}>
           <Form.Group>
@@ -67,6 +68,65 @@ export default function QRForm({
           </Form.Group>
         </Col>
       </Row>
+
+      {/* Business Card Fields */}
+      <hr />
+      <h6 className="fw-bold">Business Card Info</h6>
+      <Form.Group className="mb-2">
+        <Form.Label>Name</Form.Label>
+        <Form.Control
+          type="text"
+          placeholder="John Doe"
+          value={cardData.name}
+          onChange={(e) =>
+            onCardDataChange({ ...cardData, name: e.target.value })
+          }
+        />
+      </Form.Group>
+      <Form.Group className="mb-2">
+        <Form.Label>Role</Form.Label>
+        <Form.Control
+          type="text"
+          placeholder="Software Engineer"
+          value={cardData.role}
+          onChange={(e) =>
+            onCardDataChange({ ...cardData, role: e.target.value })
+          }
+        />
+      </Form.Group>
+      <Form.Group className="mb-2">
+        <Form.Label>Email</Form.Label>
+        <Form.Control
+          type="email"
+          placeholder="john@example.com"
+          value={cardData.email}
+          onChange={(e) =>
+            onCardDataChange({ ...cardData, email: e.target.value })
+          }
+        />
+      </Form.Group>
+      <Form.Group className="mb-2">
+        <Form.Label>Phone</Form.Label>
+        <Form.Control
+          type="text"
+          placeholder="+1234567890"
+          value={cardData.phone}
+          onChange={(e) =>
+            onCardDataChange({ ...cardData, phone: e.target.value })
+          }
+        />
+      </Form.Group>
+      <Form.Group className="mb-2">
+        <Form.Label>Website</Form.Label>
+        <Form.Control
+          type="text"
+          placeholder="https://example.com"
+          value={cardData.website}
+          onChange={(e) =>
+            onCardDataChange({ ...cardData, website: e.target.value })
+          }
+        />
+      </Form.Group>
 
       <div className="text-center mt-3">
         <Button variant="primary" type="submit" className="px-4">
