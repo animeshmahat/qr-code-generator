@@ -1,42 +1,77 @@
-import { useState } from "react";
-import { Form, Button } from "react-bootstrap";
+import { useState, useEffect } from "react";
+import { Form, Button, Row, Col } from "react-bootstrap";
 
 /**
- * QRForm component:
- * - Handles user input (text or URL).
- * - Notifies parent component (App.jsx) when input changes.
- *
- * Props:
- * - onTextChange (function): called whenever input text changes.
+ * QRForm:
+ * - Controlled inputs for text, format, and size.
+ * - Emits changes up to App for single source of truth.
  */
-export default function QRForm({ onTextChange }) {
-  // Local state for the text field
-  const [input, setInput] = useState("");
+export default function QRForm({
+  text,
+  onTextChange,
+  format,
+  onFormatChange,
+  size,
+  onSizeChange,
+}) {
+  // Local mirrors for snappy typing, then sync up
+  const [localText, setLocalText] = useState(text);
 
-  // Update local state and notify parent
-  const handleChange = (e) => {
-    const value = e.target.value;
-    setInput(value);
-    onTextChange(value); // send the value up to App.jsx
+  useEffect(() => setLocalText(text), [text]);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    onTextChange(localText.trim());
   };
 
   return (
-    <Form>
+    <Form onSubmit={handleSubmit}>
+      {/* Text / URL */}
       <Form.Group className="mb-3">
         <Form.Label>Enter Text / URL</Form.Label>
         <Form.Control
           type="text"
           placeholder="https://example.com"
-          value={input}
-          onChange={handleChange}
+          value={localText}
+          onChange={(e) => setLocalText(e.target.value)}
         />
+        <Form.Text className="text-muted">
+          The QR updates as you type after pressing Generate, or type and click
+          outside to update.
+        </Form.Text>
       </Form.Group>
 
-      {/* Button currently doesn’t do anything (QR preview will be live).
-          We'll keep it here for UX (and can hook functionality later). */}
-      <div className="text-center">
-        <Button variant="primary" disabled={!input} className="px-4">
-          Generate QR
+      {/* Format + Size in a row on wide screens */}
+      <Row className="g-3">
+        <Col xs={12} md={6}>
+          <Form.Group>
+            <Form.Label>Render As</Form.Label>
+            <Form.Select
+              value={format}
+              onChange={(e) => onFormatChange(e.target.value)}
+            >
+              <option value="canvas">Canvas (best for PNG)</option>
+              <option value="svg">SVG (infinite scale)</option>
+            </Form.Select>
+          </Form.Group>
+        </Col>
+        <Col xs={12} md={6}>
+          <Form.Group>
+            <Form.Label>Size: {size}px</Form.Label>
+            <Form.Range
+              min={120}
+              max={512}
+              step={8}
+              value={size}
+              onChange={(e) => onSizeChange(Number(e.target.value))}
+            />
+          </Form.Group>
+        </Col>
+      </Row>
+
+      <div className="text-center mt-3">
+        <Button variant="primary" type="submit" className="px-4">
+          Generate / Update
         </Button>
       </div>
     </Form>

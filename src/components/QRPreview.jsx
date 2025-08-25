@@ -1,36 +1,44 @@
-import { QRCodeCanvas } from "qrcode.react";
+import { QRCodeCanvas, QRCodeSVG } from "qrcode.react";
 import { Card } from "react-bootstrap";
 
 /**
- * QRPreview component:
- * - Displays QR code based on user input.
- * - Uses 'qrcode.react' for generating QR codes.
- *
- * Props:
- * - text (string): the input string to be converted into QR code.
+ * QRPreview:
+ * - Renders either a Canvas or SVG QR with stable IDs for export.
+ * - Size controlled by parent.
  */
-export default function QRPreview({ text }) {
-  if (!text) {
-    return null; // if no input, don't render anything
-  }
+export default function QRPreview({ text, format, size }) {
+  if (!text) return null;
 
   return (
     <Card className="mt-4 p-3 text-center shadow-sm">
-      <h5 className="mb-3">Your QR Code</h5>
+      <h5 className="mb-3">Preview</h5>
 
-      {/* QRCodeCanvas generates a <canvas> element with QR */}
-      <QRCodeCanvas
-        value={text} // content encoded in QR
-        size={200} // size in pixels
-        bgColor="#ffffff" // background color
-        fgColor="#000000" // QR color
-        level="H" // error correction level (H = high)
-        includeMargin={true} // adds spacing around QR
-        className="mx-auto"
-      />
+      {format === "canvas" ? (
+        <QRCodeCanvas
+          id="qr-canvas" // <-- used for PNG export
+          value={text}
+          size={size}
+          bgColor="#ffffff"
+          fgColor="#000000"
+          level="H"
+          includeMargin={true}
+          className="mx-auto"
+        />
+      ) : (
+        <QRCodeSVG
+          id="qr-svg" // <-- used for SVG export
+          value={text}
+          size={size}
+          bgColor="#ffffff"
+          fgColor="#000000"
+          level="H"
+          includeMargin={true}
+          className="mx-auto"
+        />
+      )}
 
-      <p className="mt-3 text-muted">
-        This QR encodes: <strong>{text}</strong>
+      <p className="mt-3 text-muted small mb-0">
+        Encodes: <strong>{text}</strong>
       </p>
     </Card>
   );
